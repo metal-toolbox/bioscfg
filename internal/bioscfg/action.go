@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"net/url"
 
 	rctypes "github.com/metal-toolbox/rivets/v2/condition"
 
@@ -63,7 +64,8 @@ func (th *TaskHandler) resetBiosConfig(ctx context.Context) error {
 func (th *TaskHandler) setBiosConfig(ctx context.Context) error {
 	var configURL = ""
 	if th.task.Parameters.BiosConfigURL != nil {
-		configURL = th.task.Parameters.BiosConfigURL.String()
+		curl := url.URL(*th.task.Parameters.BiosConfigURL)
+		configURL = curl.String()
 	}
 
 	if configURL == "" {
