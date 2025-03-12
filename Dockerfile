@@ -50,4 +50,4 @@ COPY --from=stage1 / /
 COPY bioscfg /usr/sbin/bioscfg
 RUN chmod +x /usr/sbin/bioscfg
 
-#ENTRYPOINT ["/usr/sbin/bioscfg"]
+ENTRYPOINT ["/usr/sbin/bioscfg"]
