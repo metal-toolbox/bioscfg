@@ -1,42 +1,28 @@
-FROM alpine:3.8 AS stage1
+FROM ubuntu:jammy AS stage1
 
-# IPMITOOL
+# Dell racadm
+WORKDIR /tmp/racadm
 
-ARG IPMITOOL_REPO=https://github.com/ipmitool/ipmitool.git
-ARG IPMITOOL_COMMIT=19d78782d795d0cf4ceefe655f616210c9143e62
+## Install Dependencies
+RUN apt update && apt install -y libssl-dev wget pciutils libargtable2-0
 
-WORKDIR /tmp
-RUN apk add --update --upgrade --no-cache --virtual build-deps\
-            alpine-sdk \
-            automake \
-            autoconf \
-            libtool \
-            openssl-dev \
-            readline-dev \
-    && git clone -b master ${IPMITOOL_REPO}
+## Download
+RUN wget -U="Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0" https://dl.dell.com/FOLDER12638439M/1/Dell-iDRACTools-Web-LX-11.3.0.0-795_A00.tar.gz
+RUN tar -xzvf Dell-iDRACTools-Web-LX-11.3.0.0-795_A00.tar.gz
 
-#
-# cherry-pick'ed 1edb0e27e44196d1ebe449aba0b9be22d376bcb6
-# to fix https://github.com/ipmitool/ipmitool/issues/377
-#
-WORKDIR /tmp/ipmitool
-RUN git checkout ${IPMITOOL_COMMIT} \
-    && git config --global user.email "github.ci@doesnot.existorg" \
-    && git cherry-pick 1edb0e27e44196d1ebe449aba0b9be22d376bcb6 \
-    && ./bootstrap \
-    && ./configure \
-        --prefix=/usr/local \
-        --enable-ipmievd \
-        --enable-ipmishell \
-        --enable-intf-lan \
-        --enable-intf-lanplus \
-        --enable-intf-open \
-    && make \
-    && make install \
-    && apk del build-deps
+## Workaround to ignore systemctl
+RUN echo -e '#!/bin/bash\nexit 0' > /bin/systemctl && chmod +x /bin/systemctl
+
+## Install racadm
+WORKDIR /tmp/racadm/iDRACTools/racadm
+RUN ./install_racadm.sh
+
+## Install ipmitool
+WORKDIR /tmp/racadm/iDRACTools/ipmitool/UBUNTU22_x86_64
+RUN dpkg -i ./ipmitool_1.8.18_amd64.deb
 
 WORKDIR /tmp
-RUN rm -rf /tmp/ipmitool
+RUN rm -rf /tmp/racadm
 
 ## Get IPMI IANA resource, to prevent dependency on third party servers at runtime.
 WORKDIR /usr/share/misc
@@ -58,28 +44,10 @@ WORKDIR /tmp
 RUN rm -rf /tmp/sum
 
 # Build a lean image with dependencies installed.
-## Do this because apk can install a ton of junk.
-FROM alpine:3.8
+FROM ubuntu:jammy
 COPY --from=stage1 / /
-
-## SUM and IPMITOOL is dynamically linked and needs glibc
-ENV GLIBC_REPO=https://github.com/sgerrand/alpine-pkg-glibc
-ENV GLIBC_VERSION=2.30-r0
-RUN set -ex && \
-    apk --update add libstdc++ curl ca-certificates && \
-    for pkg in glibc-${GLIBC_VERSION} glibc-bin-${GLIBC_VERSION}; \
-        do curl -sSL ${GLIBC_REPO}/releases/download/${GLIBC_VERSION}/${pkg}.apk -o /tmp/${pkg}.apk; done && \
-    apk add --allow-untrusted /tmp/*.apk && \
-    rm -v /tmp/*.apk && \
-    /usr/glibc-compat/sbin/ldconfig /lib /usr/glibc-compat/lib
-
-# required by ipmitool and sum runtime
-RUN apk add --update --upgrade --no-cache --virtual run-deps \
-        ca-certificates \
-        libcrypto1.0 \
-        readline
 
 COPY bioscfg /usr/sbin/bioscfg
 RUN chmod +x /usr/sbin/bioscfg
 
-ENTRYPOINT ["/usr/sbin/bioscfg"]
+#ENTRYPOINT ["/usr/sbin/bioscfg"]
