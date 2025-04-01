@@ -15,6 +15,10 @@ spec:
         k8s-service: bioscfg
     spec:
       terminationGracePeriodSeconds: 1200
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"  # Adjust the value as needed
       containers:
         - name: bioscfg
           image: {{ .Values.image.repository.url }}/bioscfg:{{ .Values.image.repository.tag }}

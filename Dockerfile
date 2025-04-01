@@ -1,16 +1,16 @@
-FROM ubuntu:jammy AS stage1
+FROM ubuntu:jammy
 
 # Dell racadm
 WORKDIR /tmp/racadm
 
 ## Install Dependencies
-RUN apt update && apt install -y libssl-dev wget pciutils libargtable2-0
+RUN apt update && apt install -y libssl-dev wget pciutils libargtable2-0 dnsutils iputils-ping
 
 ## Download
 RUN wget -U="Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0" https://dl.dell.com/FOLDER12638439M/1/Dell-iDRACTools-Web-LX-11.3.0.0-795_A00.tar.gz
 RUN tar -xzvf Dell-iDRACTools-Web-LX-11.3.0.0-795_A00.tar.gz
 
-## Workaround to ignore systemctl
+## Workaround to add no-op systemctl, otherwise Dell's debs fail
 RUN echo -e '#!/bin/bash\nexit 0' > /bin/systemctl && chmod +x /bin/systemctl
 
 ## Install racadm
@@ -43,10 +43,7 @@ RUN chmod +x /usr/bin/sum
 WORKDIR /tmp
 RUN rm -rf /tmp/sum
 
-# Build a lean image with dependencies installed.
-FROM ubuntu:jammy
-COPY --from=stage1 / /
-
+# bioscfg
 COPY bioscfg /usr/sbin/bioscfg
 RUN chmod +x /usr/sbin/bioscfg
 

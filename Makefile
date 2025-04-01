@@ -13,12 +13,12 @@ REPO := "https://github.com/metal-toolbox/bioscfg.git"
 .DEFAULT_GOAL := help
 
 ## lint
-lint: 
+lint:
 	golangci-lint run --config .golangci.yml --fix
 
 ## Go test
 test: lint
-	CGO_ENABLED=0 go test -timeout 1m -v -covermode=atomic ./...
+	go test -timeout 1m -v -covermode=atomic ./...
 
 ## Generate mocks
 gen-mock:
@@ -32,7 +32,7 @@ build-linux:
 ifeq ($(GO_VERSION), 0)
 	$(error build requies go version 1.22 or higher)
 endif
-	CGO_ENABLED=0 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bioscfg \
+	GOOS=linux GOARCH=amd64 go build -o bioscfg \
 		-ldflags \
 		"-X $(LDFLAG_LOCATION).GitCommit=$(GIT_COMMIT) \
 		-X $(LDFLAG_LOCATION).GitBranch=$(GIT_BRANCH) \
@@ -42,8 +42,7 @@ endif
 
 ## build docker image and tag as ghcr.io/metal-toolbox/bioscfg:latest
 build-image: build-linux
-	@echo ">>>> NOTE: You may want to execute 'make build-image-nocache' depending on the Docker stages changed"
-	docker buildx build --platform linux/amd64 --rm=true -f Dockerfile -t ${DOCKER_IMAGE}:latest . \
+	docker buildx build --no-cache --platform linux/amd64 --rm=true -f Dockerfile -t ${DOCKER_IMAGE}:latest . \
 		--label org.label-schema.schema-version=1.0 \
 		--label org.label-schema.vcs-ref=$(GIT_COMMIT_FULL) \
 		--label org.label-schema.vcs-url=$(REPO)
