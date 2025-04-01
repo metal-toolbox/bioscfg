@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"time"
 
 	rctypes "github.com/metal-toolbox/rivets/v2/condition"
 
@@ -17,6 +18,8 @@ func (th *TaskHandler) handleAction(ctx context.Context) error {
 	case rctypes.ResetConfig:
 		return th.resetBiosConfig(ctx)
 	case rctypes.SetConfig:
+		ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+		defer cancel()
 		return th.setBiosConfig(ctx)
 	default:
 		return th.failedWithError(ctx, string(th.task.Parameters.Action), errUnsupportedAction)
