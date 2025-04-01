@@ -6,11 +6,14 @@ WORKDIR /tmp/racadm
 ## Install Dependencies
 RUN apt update && apt install -y libssl-dev wget pciutils libargtable2-0 dnsutils iputils-ping
 
-## Download
+## Download - this requires a user-agent hack since Dell filters non-browser UAs for some reason  ¯\_(ツ)_/¯
 RUN wget -U="Mozilla/5.0 (X11; Linux x86_64; rv:10.0) Gecko/20100101 Firefox/10.0" https://dl.dell.com/FOLDER12638439M/1/Dell-iDRACTools-Web-LX-11.3.0.0-795_A00.tar.gz
 RUN tar -xzvf Dell-iDRACTools-Web-LX-11.3.0.0-795_A00.tar.gz
 
-## Workaround to add no-op systemctl, otherwise Dell's debs fail
+## Workaround to add no-op systemctl, otherwise Dell's debs fail with:
+##  installed srvadmin-hapi package post-installation script subprocess returned error exit status 127
+## Digging further revealed the post-install script is attempting to activate a systemd service we don't care
+## about (and docker doesn't do systemd.)
 RUN echo -e '#!/bin/bash\nexit 0' > /bin/systemctl && chmod +x /bin/systemctl
 
 ## Install racadm
