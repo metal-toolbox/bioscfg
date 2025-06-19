@@ -7,7 +7,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/equinix-labs/otel-init-go v0.0.9
 	github.com/google/uuid v1.6.0
-	github.com/hashicorp/go-retryablehttp v0.7.7
+	github.com/hashicorp/go-retryablehttp v0.7.8
 	github.com/jeremywohl/flatten v1.0.1
 	github.com/metal-toolbox/bmclib v1.2.1
 	github.com/metal-toolbox/ctrl v1.1.0
